@@ -10,27 +10,6 @@ import {
   PokemonErrorBoundary,
 } from '../pokemon'
 
-function useSafeDispatch(dispatch) {
-  const mountedRef = React.useRef(false)
-
-  // to make this even more generic you should use the useLayoutEffect hook to
-  // make sure that you are correctly setting the mountedRef.current immediately
-  // after React updates the DOM. Even though this effect does not interact
-  // with the dom another side effect inside a useLayoutEffect which does
-  // interact with the dom may depend on the value being set
-  React.useLayoutEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  return React.useCallback(
-    (...args) => (mountedRef.current ? dispatch(...args) : void 0),
-    [dispatch],
-  )
-}
-
 // 🐨 this is going to be our generic asyncReducer
 function asyncReducer(state, action) {
   switch (action.type) {
@@ -53,7 +32,7 @@ function asyncReducer(state, action) {
 }
 
 function useAsync(initialState) {
-  const [state, unsafeDispatch] = React.useReducer(asyncReducer, {
+  const [state, dispatch] = React.useReducer(asyncReducer, {
     status: 'idle',
     // 🐨 this will need to be "data" instead of "pokemon"
     data: null,
@@ -61,7 +40,6 @@ function useAsync(initialState) {
     ...initialState
   });
 
-  const dispatch = useSafeDispatch(unsafeDispatch);
   const {data, error, status} = state;
 
   const run = React.useCallback(promise => {
@@ -74,7 +52,7 @@ function useAsync(initialState) {
         dispatch({type: 'rejected', error})
       },
     )
-  }, [dispatch]);
+  }, []);
 
   return {
     error,
